@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: orderhub
+      POSTGRES_USER: orderhub
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-orderhub-local}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orderhub -d orderhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/orderhub
+      DB_USER: orderhub
+      DB_PASSWORD: ${DB_PASSWORD:-orderhub-local}
+      USER_PASSWORD: ${USER_PASSWORD:-user-local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin-local}
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  postgres-data:
